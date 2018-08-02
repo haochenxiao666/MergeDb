@@ -20,7 +20,9 @@ mysql 执行 grant select,replication slave,replication client on *.* to 'merged
 2. 异构端授权增删改查权限用户，以tidb为例。
   
 3.配置文件设置
+
     [mysql]
+    
       user = mergedb
       passwd = mergedb
       host = localhost
