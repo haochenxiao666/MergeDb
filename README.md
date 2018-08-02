@@ -15,9 +15,9 @@
 
 mysql 执行 grant select,replication slave,replication client on *.* to 'mergedb'@"localhost" identified by 'mergedb';FLUSH PRIVILEGES;
     
-2. **异构端授权增删改查权限用户，以tidb为例。
+2. **异构端授权增删改查权限用户，以tidb为例**。
   
-3. **配置文件设置
+3. **配置文件设置**
 
     [mysql]
     
@@ -46,15 +46,15 @@ mysql 执行 grant select,replication slave,replication client on *.* to 'merged
       only_schema = chain
       route_schema = scm_merge_db
       
-4. **注意事项
+4. **注意事项**
 
       log_pos，log_file 第一次记录需要手动填进去，之后会自动记录更新
     
-5. **测试运行
+5. **测试运行**
 
       python row_merge.py
       
-6. **生产环境
+6. **生产环境**
 
       sh service start
 
