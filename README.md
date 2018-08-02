@@ -10,6 +10,7 @@
   pip install mysql-replication
   
 使用方法：
+
   1.授权主从用户
     mysql 执行 grant select,replication slave,replication client on *.* to 'mergedb'@"localhost" identified by 'mergedb';FLUSH PRIVILEGES;
     
