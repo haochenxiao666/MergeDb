@@ -59,10 +59,7 @@
       sh service start
       
 ## 参考文献
-    [文献1][1]
-    [文献2][2]
-    [1]:https://github.com/testpython2/mysqlbinlog
-    [2]:https://github.com/bjbean/mysqlbinlog-analysis
+    [文献1] (https://github.com/bjbean/mysqlbinlog-analysis "1")
 
 
   
