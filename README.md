@@ -1,13 +1,13 @@
 #MergeDb#
-用于对于不同源有相同表结构的库表进行合表便于纵向分析
+    用于对于不同源有相同表结构的库表进行合表便于纵向分析
 
 # 环境要求:
-  python 2.7 版本
-  mysql 5.5以上
+    python 2.7 版本
+    mysql 5.5以上
 
 # 安装库:
-  pip install pymysql
-  pip install mysql-replication
+    pip install pymysql
+    pip install mysql-replication
   
 # 使用方法：
 
