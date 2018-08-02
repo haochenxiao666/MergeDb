@@ -57,6 +57,10 @@
 6. **生产环境**
 
       sh service start
+      
+## 参考文献
+    [1] (https://github.com/testpython2/mysqlbinlog)
+    [2] (https://github.com/bjbean/mysqlbinlog-analysis)
 
 
   
