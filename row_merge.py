@@ -1,4 +1,4 @@
-#/bin/python
+#!/usr/bin/python
 #coding=utf-8
 
 import os
@@ -98,7 +98,7 @@ def compare_items(items):
 	if v is None:
 		return '`%s` = NULL' % k
 	else:
-		return '`%s`="%s"' % (k,v)
+		return "`%s`='%s'" % (k,v)
 		
 def savepos(file,pos):
 	with open('binlogpos.meta','w') as g:
@@ -305,36 +305,27 @@ def main():
 					if m not in tidblist:
 						del row['before_values'][m]
 						
-				
 				#判断是否有双引号,解决双引号异常		
 				for v1 in row:
 					for va in row[v1]:
 						if isinstance(row[v1][va],unicode):
 							if row[v1][va].find('"') >0:
-								row[v1][va] = row[v1][va].replace('"','\\"')
+								row[v1][va] = row[v1][va].replace('"','\\"')	
 								print row[v1][va]
-				
-				template='UPDATE `{0}` set {1} WHERE {2} ;'.format(
-					binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
-					' AND '.join(map(compare_items,row["before_values"].items())),datetime.datetime.fromtimestamp(binlogevent.timestamp)
-				)
-				
+								
 				template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
 					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
 					' AND '.join(map(compare_items,row["before_values"].items())),datetime.datetime.fromtimestamp(binlogevent.timestamp)
-				)			
-				
+				)
 				print template
-				
+				template = template.replace('""','"')
+				print template
 				mid_sql = template.split('WHERE')[1]
 				tidbid_sql = 'select `tidbid` from %s where %s'%(binlogevent.table,mid_sql)
-				print tidbid_sql
-				TIDBID_SQL = tidbid_sql.replace('= NULL','IS NULL')
-
-				
+				TIDBID_SQL = tidbid_sql.replace('= NULL','IS NULL')	
+				print TIDBID_SQL
 				con.execute(TIDBID_SQL)
 				tidbid_result = con.fetchone()
-				print tidbid_result
 				
 				if tidbid_result:
 					tidbid = tidbid_result[0]
