@@ -256,11 +256,7 @@ def main():
 				for m in mylist:
 					if m not in tidblist:
 						del row['values'][m]
-				
-				#template = 'DELETE FROM `{0}` WHERE {1} ;'.format(
-				#	binlogevent.table, ' AND '.join(map(compare_items, row['values'].items()))
-				#)
-				
+								
 				template = 'DELETE FROM `{0}`.`{1}` WHERE {2} ;'.format(
 					bdb, binlogevent.table, ' AND '.join(map(compare_items, row['values'].items()))
 				)
@@ -270,11 +266,11 @@ def main():
 				sq_sql = template.split('WHERE')[1]
 				select_sql = 'SELECT `tidbid` from `%s` WHERE %s'%(binlogevent.table,sq_sql)
 				SELECT_SQL = select_sql.replace('= NULL','IS NULL')
-				print SELECT_SQL
+				#print SELECT_SQL
 				con.execute(SELECT_SQL)				
 				sql_result = con.fetchone()
 				#记录日志位置
-				print sql_result
+				#print sql_result
 				if sql_result:
 					tidbid = sql_result[0]
 					del_sql = 'DELETE FROM `%s` where `tidbid`=%s;'%(binlogevent.table,tidbid)
@@ -317,13 +313,11 @@ def main():
 					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
 					' AND '.join(map(compare_items,row["before_values"].items())),datetime.datetime.fromtimestamp(binlogevent.timestamp)
 				)
-				print template
 				template = template.replace('""','"')
-				print template
 				mid_sql = template.split('WHERE')[1]
 				tidbid_sql = 'select `tidbid` from %s where %s'%(binlogevent.table,mid_sql)
 				TIDBID_SQL = tidbid_sql.replace('= NULL','IS NULL')	
-				print TIDBID_SQL
+				#print TIDBID_SQL
 				con.execute(TIDBID_SQL)
 				tidbid_result = con.fetchone()
 				
