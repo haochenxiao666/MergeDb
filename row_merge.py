@@ -184,7 +184,6 @@ def main():
 
 	for binlogevent in stream:
 
-		print binlogevent.schema
 		#映射
 		bdb = DBR[binlogevent.schema]
 		
@@ -228,11 +227,11 @@ def main():
 					db.commit()
 					#记录日志位置
 					savepos(stream.log_file,stream.log_pos)
-					logger.info("%s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 					stream.log_file,stream.log_pos,template))
 				except:
 					savepos(stream.log_file,stream.log_pos)
-					logger.info("%s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 					stream.log_file,stream.log_pos,template))
 					sys.exit()
 				
@@ -280,11 +279,11 @@ def main():
 						db.commit()	
 						#记录日志位置
 						savepos(stream.log_file,stream.log_pos)
-						logger.info("%s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 						stream.log_file,stream.log_pos,template))
 					except:
 						savepos(stream.log_file,stream.log_pos)
-						logger.info("%s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 						stream.log_file,stream.log_pos,del_sql))
 						sys.exit()
 				
@@ -330,11 +329,11 @@ def main():
 						db.commit()
 						#记录日志位置
 						savepos(stream.log_file,stream.log_pos)
-						logger.info("%s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 						stream.log_file,stream.log_pos,u_sql))
 					except:
 						savepos(stream.log_file,stream.log_pos)
-						logger.info("%s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 						stream.log_file,stream.log_pos,u_sql))
 						sys.exit()
 								
