@@ -11,9 +11,17 @@ dpath=/opt/dbbackup/tidb/conf
 function start()
 {
     cd $dpath
-    setsid python row_merge.py >>./binlog.log 2>&1 &
-    sleep 1
-    echo "start tidb_syncer_merge_db"
+	result=`ps -elf |grep row_merge.py|grep -v grep`
+	
+	if [ "$result" = "" ];then
+		setsid python row_merge.py >>./binlog.log 2>&1 &
+		sleep 1
+		echo "start tidb_syncer_merge_db"
+	else
+		echo "tidb_syncer_merge_db is started"
+	fi
+	
+    
 }
 
 function stop()
