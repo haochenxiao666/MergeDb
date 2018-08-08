@@ -212,17 +212,17 @@ def main():
 				#判断是否有双引号,解决双引号异常		
 				for va in row['values']:
 					if isinstance(row['values'][va],unicode):
-						if row['values'][va].find('"') >0:
-							if row['values'][va].find('\"') >0:
+						if row['values'][va].find("'") >0:
+							if row['values'][va].find(r"\'") >0:
 								pass
 							else:
-								row['values'][va] = row['values'][va].replace('"','\\"')
+								row['values'][va] = row['values'][va].replace("'",r"\'")
 								print row['values'][va]
 				
 				template = 'INSERT INTO `{0}`.`{1}`({2}) VALUES ({3});'.format(
 					bdb,binlogevent.table,
 					', '.join(map(lambda key: '`%s`' % key, row['values'].keys())),
-					', '.join(map(lambda v: '"%s"' % v,row["values"].values()))
+					', '.join(map(lambda v: "'%s'" % v,row["values"].values()))
 				)
 				
 				try:
@@ -249,10 +249,10 @@ def main():
 				for va in row['values']:
 					if isinstance(row['values'][va],unicode):
 						if row['values'][va].find('"') >0:
-							if row['values'][va].find('\"') >0:
+							if row['values'][va].find(r'\"') >0:
 								pass
 							else:
-								row['values'][va] = row['values'][va].replace('"','\\"')
+								row['values'][va] = row['values'][va].replace('"',r'\"')
 								print row['values'][va]
 					
 				#去除多余字段
@@ -306,15 +306,16 @@ def main():
 					if m not in tidblist:
 						del row['before_values'][m]
 						
-				#判断是否有双引号,解决双引号异常		
+				#判断是否有双引号,解决双引号异常				
 				for v1 in row:
 					for va in row[v1]:
-						if row['values'][va].find('"') >0:
-							if row['values'][va].find('\"') >0:
-								pass
-							else:
-								row['values'][va] = row['values'][va].replace('"','\\"')
-								print row['values'][va]
+						if isinstance(row[v1][va],unicode):
+							if row[v1][va].find('"') >0:
+								if row[v1][va].find(r'\"') >0:
+									pass
+								else:
+									row[v1][va] = row[v1][va].replace('"',r'\"')
+									print row[v1][va]
 								
 				template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
 					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
