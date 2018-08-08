@@ -209,17 +209,20 @@ def main():
 					if m not in tidblist:
 						del row['values'][m]
 				
-				
-				#template = 'INSERT INTO `{0}`({1}) VALUES ({2});'.format(
-				#	binlogevent.table,
-				#	', '.join(map(lambda key: '`%s`' % key, row['values'].keys())),
-				#	', '.join(map(lambda v: "'%s'" % v,row["values"].values()))
-				#)
+				#判断是否有双引号,解决双引号异常		
+				for va in row['values']:
+					if isinstance(row['values'][va],unicode):
+						if row['values'][va].find('"') >0:
+							if row['values'][va].find('\"') >0:
+								pass
+							else:
+								row['values'][va] = row['values'][va].replace('"','\\"')
+								print row['values'][va]
 				
 				template = 'INSERT INTO `{0}`.`{1}`({2}) VALUES ({3});'.format(
 					bdb,binlogevent.table,
 					', '.join(map(lambda key: '`%s`' % key, row['values'].keys())),
-					', '.join(map(lambda v: "'%s'" % v,row["values"].values()))
+					', '.join(map(lambda v: '"%s"' % v,row["values"].values()))
 				)
 				
 				try:
