@@ -43,9 +43,10 @@ def InsertDataRange(m):
 	#cleansql = 'TRUNCATE table %s'%m
 	#mgdb.fetch_all(cleansql)
 	#获取表列名称
-	schemasql = "select COLUMN_NAME from information_schema.COLUMNS where table_name = '%s' \
-				and table_schema = '%s';"%(m,mergedb)
-	schemalist = []
+	schemasql = "select COLUMN_NAME from information_schema.COLUMNS where table_name = '%s'\
+				and table_schema = '%s';"%(m,mergedb) 
+				
+				schemalist = []
 	schemaresult = mgdb.fetch_all(schemasql)
 	for i in schemaresult:
 		schemalist.append(i['COLUMN_NAME'])
