@@ -246,8 +246,11 @@ def main():
 				for va in row['values']:
 					if isinstance(row['values'][va],unicode):
 						if row['values'][va].find('"') >0:
-							row['values'][va] = row['values'][va].replace('"','\\"')
-							print row['values'][va]
+							if row['values'][va].find('\"') >0:
+								pass
+							else:
+								row['values'][va] = row['values'][va].replace('"','\\"')
+								print row['values'][va]
 					
 				#去除多余字段
 				tidblist = column_dict[ti_db][binlogevent.table].values()
@@ -303,10 +306,12 @@ def main():
 				#判断是否有双引号,解决双引号异常		
 				for v1 in row:
 					for va in row[v1]:
-						if isinstance(row[v1][va],unicode):
-							if row[v1][va].find('"') >0:
-								row[v1][va] = row[v1][va].replace('"','\\"')	
-								print row[v1][va]
+						if row['values'][va].find('"') >0:
+							if row['values'][va].find('\"') >0:
+								pass
+							else:
+								row['values'][va] = row['values'][va].replace('"','\\"')
+								print row['values'][va]
 								
 				template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
 					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
