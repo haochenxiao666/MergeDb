@@ -58,6 +58,17 @@
 
       sh service start
       
+7. **DTL**
+      DTL用于从mysql 全量异构导入其他数据库
+      
+      导入规则根据自己的具体情况进行定义。本程序以tidb 为例，根据自己需求进行定义。
+
+## 联系方式
+        
+    QQ群号：
+    
+        817399355
+
 ## 参考文献
     [文献1] (https://github.com/bjbean/mysqlbinlog-analysis "1")
 
