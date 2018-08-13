@@ -218,10 +218,6 @@ def main():
 							else:
 								row['values'][va] = row['values'][va].replace("'",r"\'")
 								print row['values'][va]
-								
-						if len(re.findall("\'",s)) == 1:
-							row['values'][va] = s.replace("\'","")
-							print row['values'][va]
 				
 				template = 'INSERT INTO `{0}`.`{1}`({2}) VALUES ({3});'.format(
 					bdb,binlogevent.table,
@@ -252,28 +248,37 @@ def main():
 				#判断是否有双引号,解决双引号异常		
 				for va in row['values']:
 					if isinstance(row['values'][va],unicode):
-						if row['values'][va].find('"') >0:
-							if row['values'][va].find(r'\"') >0:
+
+						s = row['values'][va]
+						if s.find('"') >0:
+							if s.find(r'\"') >0:
 								pass
 							else:
-								row['values'][va] = row['values'][va].replace('"',r'\"')
+								row['values'][va] = s.replace('"',r'\"')
 								print row['values'][va]
-					
+								
+						if len(re.findall("\'",s)) == 1:
+							row['values'][va] = s.replace("\'","")
+							print row['values'][va]
+						
+				
+				
 				#去除多余字段
 				tidblist = column_dict[ti_db][binlogevent.table].values()
 				mylist = row['values'].keys()
 				for m in mylist:
 					if m not in tidblist:
 						del row['values'][m]
-								
+				
+				
 				template = 'DELETE FROM `{0}`.`{1}` WHERE {2} ;'.format(
 					bdb, binlogevent.table, ' AND '.join(map(compare_items, row['values'].items()))
 				)
 				
-				
 				#查找出主键ID并根据主键ID删除行				
 				sq_sql = template.split('WHERE')[1]
 				select_sql = 'SELECT `tidbid` from `%s` WHERE %s'%(binlogevent.table,sq_sql)
+
 				SELECT_SQL = select_sql.replace('= NULL','IS NULL')
 				#print SELECT_SQL
 				con.execute(SELECT_SQL)				
@@ -310,17 +315,20 @@ def main():
 					if m not in tidblist:
 						del row['before_values'][m]
 						del row['after_values'][m]
-						
+		
 				#判断是否有双引号,解决双引号异常				
 				for v1 in row:
 					for va in row[v1]:
 						if isinstance(row[v1][va],unicode):
-							if row[v1][va].find('"') >0:
-								if row[v1][va].find(r'\"') >0:
+							
+							s = row[v1][va]
+							if s.find('"') >0:
+								if s.find(r'\"') >0:
 									pass
 								else:
-									row[v1][va] = row[v1][va].replace('"',r'\"')
+									row[v1][va] = s.replace('"',r'\"')
 									print row[v1][va]
+									
 							if len(re.findall("\'",s)) == 1:
 								row[v1][va] = s.replace("\'","")
 								print row[v1][va]
