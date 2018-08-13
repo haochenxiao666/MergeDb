@@ -218,6 +218,10 @@ def main():
 							else:
 								row['values'][va] = row['values'][va].replace("'",r"\'")
 								print row['values'][va]
+								
+						if len(re.findall("\'",s)) == 1:
+							row['values'][va] = s.replace("\'","")
+							print row['values'][va]
 				
 				template = 'INSERT INTO `{0}`.`{1}`({2}) VALUES ({3});'.format(
 					bdb,binlogevent.table,
@@ -305,6 +309,7 @@ def main():
 				for m in mylist:
 					if m not in tidblist:
 						del row['before_values'][m]
+						del row['after_values'][m]
 						
 				#判断是否有双引号,解决双引号异常				
 				for v1 in row:
@@ -316,6 +321,9 @@ def main():
 								else:
 									row[v1][va] = row[v1][va].replace('"',r'\"')
 									print row[v1][va]
+							if len(re.findall("\'",s)) == 1:
+								row[v1][va] = s.replace("\'","")
+								print row[v1][va]
 								
 				template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
 					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
