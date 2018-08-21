@@ -275,32 +275,21 @@ def main():
 					bdb, binlogevent.table, ' AND '.join(map(compare_items, row['values'].items()))
 				)
 				
-				#查找出主键ID并根据主键ID删除行				
-				sq_sql = template.split('WHERE')[1]
-				select_sql = 'SELECT `tidbid` from `%s` WHERE %s'%(binlogevent.table,sq_sql)
-
-				SELECT_SQL = select_sql.replace('= NULL','IS NULL')
-				#print SELECT_SQL
-				con.execute(SELECT_SQL)				
-				sql_result = con.fetchone()
-				#记录日志位置
-				#print sql_result
-				if sql_result:
-					tidbid = sql_result[0]
-					del_sql = 'DELETE FROM `%s` where `tidbid`=%s;'%(binlogevent.table,tidbid)
-					try:					
+				template = template.replace('= NULL','IS NULL')
+				
+				try:					
 													
-						con.execute(del_sql)
-						db.commit()	
-						#记录日志位置
-						savepos(stream.log_file,stream.log_pos)
-						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-						stream.log_file,stream.log_pos,template))
-					except:
-						savepos(stream.log_file,stream.log_pos)
-						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-						stream.log_file,stream.log_pos,del_sql))
-						sys.exit()
+					con.execute(template)
+					db.commit()	
+					#记录日志位置
+					savepos(stream.log_file,stream.log_pos)
+					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					stream.log_file,stream.log_pos,template))
+				except:
+					savepos(stream.log_file,stream.log_pos)
+					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					stream.log_file,stream.log_pos,template))
+					sys.exit()
 				
 			elif isinstance(binlogevent, UpdateRowsEvent):
 				print 'This is UPDATE OPTIONS'
@@ -332,35 +321,24 @@ def main():
 							if len(re.findall("\'",s)) == 1:
 								row[v1][va] = s.replace("\'","")
 								print row[v1][va]
-								
+				
 				template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
 					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
-					' AND '.join(map(compare_items,row["before_values"].items())),datetime.datetime.fromtimestamp(binlogevent.timestamp)
-				)
+					' AND '.join(map(compare_items,row["before_values"].items())).replace('= NULL','IS NULL'),datetime.datetime.fromtimestamp(binlogevent.timestamp))
 				template = template.replace('""','"')
-				mid_sql = template.split('WHERE')[1]
-				tidbid_sql = 'select `tidbid` from %s where %s'%(binlogevent.table,mid_sql)
-				TIDBID_SQL = tidbid_sql.replace('= NULL','IS NULL')	
-				#print TIDBID_SQL
-				con.execute(TIDBID_SQL)
-				tidbid_result = con.fetchone()
 				
-				if tidbid_result:
-					tidbid = tidbid_result[0]
-					u_sql = 'update `%s` set %s WHERE `tidbid` = %s;'%(binlogevent.table,','.join(map(compare_items,row["after_values"].items())),tidbid)
-					
-					try:												
-						con.execute(u_sql)
-						db.commit()
-						#记录日志位置
-						savepos(stream.log_file,stream.log_pos)
-						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-						stream.log_file,stream.log_pos,u_sql))
-					except:
-						savepos(stream.log_file,stream.log_pos)
-						logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-						stream.log_file,stream.log_pos,u_sql))
-						sys.exit()
+				try:												
+					con.execute(template)
+					db.commit()
+					#记录日志位置
+					savepos(stream.log_file,stream.log_pos)
+					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					stream.log_file,stream.log_pos,template))
+				except:
+					savepos(stream.log_file,stream.log_pos)
+					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					stream.log_file,stream.log_pos,template))
+					sys.exit()
 								
 	stream.close()
 
