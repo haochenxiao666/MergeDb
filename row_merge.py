@@ -104,6 +104,31 @@ def savepos(file,pos):
 	with open('binlogpos.meta','w') as g:
 		savemeta = {'file':file,'pos':pos}
 		g.write(json.dumps(savemeta))	
+		
+def TransFer(binlogevent_schema,bdb,template,stream_log_file,stream_log_pos):
+	try:
+		con.execute(template)
+		db.commit()
+		#记录日志位置
+		savepos(stream_log_file,stream_log_pos)
+		logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+		stream_log_file,stream_log_pos,template))
+	except:
+		try:
+			time.sleep(10)
+			con.execute(template)
+			db.commit()
+			#记录日志位置
+			savepos(stream_log_file,stream_log_pos)
+			logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+			stream_log_file,stream_log_pos,template))
+			
+		except:	
+			savepos(stream_log_file,stream_log_pos)
+			logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+			stream_log_file,stream_log_pos,template))
+			sys.exit()
+	
 	
 def GetColumnDict(column_dict):
 	query = """
@@ -225,18 +250,7 @@ def main():
 					', '.join(map(lambda v: "'%s'" % v,row["values"].values()))
 				)
 				
-				try:
-					con.execute(template)
-					db.commit()
-					#记录日志位置
-					savepos(stream.log_file,stream.log_pos)
-					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-					stream.log_file,stream.log_pos,template))
-				except:
-					savepos(stream.log_file,stream.log_pos)
-					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-					stream.log_file,stream.log_pos,template))
-					sys.exit()
+				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos)
 				
 			
 			elif isinstance(binlogevent, DeleteRowsEvent):
@@ -277,19 +291,7 @@ def main():
 				
 				template = template.replace('= NULL','IS NULL')
 				
-				try:					
-													
-					con.execute(template)
-					db.commit()	
-					#记录日志位置
-					savepos(stream.log_file,stream.log_pos)
-					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-					stream.log_file,stream.log_pos,template))
-				except:
-					savepos(stream.log_file,stream.log_pos)
-					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-					stream.log_file,stream.log_pos,template))
-					sys.exit()
+				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos)
 				
 			elif isinstance(binlogevent, UpdateRowsEvent):
 				print 'This is UPDATE OPTIONS'
@@ -327,18 +329,7 @@ def main():
 					' AND '.join(map(compare_items,row["before_values"].items())).replace('= NULL','IS NULL'),datetime.datetime.fromtimestamp(binlogevent.timestamp))
 				template = template.replace('""','"')
 				
-				try:												
-					con.execute(template)
-					db.commit()
-					#记录日志位置
-					savepos(stream.log_file,stream.log_pos)
-					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-					stream.log_file,stream.log_pos,template))
-				except:
-					savepos(stream.log_file,stream.log_pos)
-					logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent.schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-					stream.log_file,stream.log_pos,template))
-					sys.exit()
+				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos)
 								
 	stream.close()
 
