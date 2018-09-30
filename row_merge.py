@@ -105,29 +105,22 @@ def savepos(file,pos):
 		savemeta = {'file':file,'pos':pos}
 		g.write(json.dumps(savemeta))	
 		
-def TransFer(binlogevent_schema,bdb,template,stream_log_file,stream_log_pos):
-	try:
-		con.execute(template)
-		db.commit()
-		#记录日志位置
-		savepos(stream_log_file,stream_log_pos)
-		logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-		stream_log_file,stream_log_pos,template))
-	except:
+def TransFer(binlogevent_schema,bdb,template,stream_log_file,stream_log_pos,tssqlall):
+
+	#解决tikv 繁忙终止
+	for i in range(1,11):
 		try:
-			time.sleep(10)
-			con.execute(template)
+			if i >= 2:
+				time.sleep(100)
+			con.execute(tssqlall)
 			db.commit()
-			#记录日志位置
-			savepos(stream_log_file,stream_log_pos)
-			logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-			stream_log_file,stream_log_pos,template))
 			
-		except:	
-			savepos(stream_log_file,stream_log_pos)
-			logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行发生异常的sql是 %s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
-			stream_log_file,stream_log_pos,template))
-			sys.exit()
+			logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+			stream_log_file,stream_log_pos))
+			break
+		except Exception,e:
+			logger.info("source %s,route %s, %s ,当前读取binlog文件是%s, 读取位置是%s,执行的sql是 %s,错误信息是%s"%(binlogevent_schema,bdb,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+			stream_log_file,stream_log_pos,template,e))
 	
 	
 def GetColumnDict(column_dict):
@@ -170,12 +163,7 @@ for clm in addcolumn:
 
 def main():
 
-	#读取binlog 位置
-	#默认位置
 	print 'start'
-	#log_pos = 51487324
-	#log_file="mysql-bin.000008"
-	
 	
 	blposfile = 'binlogpos.meta'	
 
@@ -185,10 +173,13 @@ def main():
 			binlogmessage = json.loads(log_message)
 			log_file = binlogmessage['file']
 			log_pos = binlogmessage['pos']
+
+			
 	elif os.path.exists('syncer.meta'):
 		smpos = open('syncer.meta','r').readlines()
 		log_file = ((smpos[0].split('=')[1]).split('"')[1]).strip()
 		log_pos = (smpos[1].split('=')[1]).strip()
+
 	else:
 		print 'binlog 文件不存在,退出！'
 		sys.exit()
@@ -204,11 +195,10 @@ def main():
 								log_file=log_file,
 								log_pos=log_pos
 								)
-
-	#flag=stream.log_pos	
+		
 
 	for binlogevent in stream:
-
+	
 		#映射
 		bdb = DBR[binlogevent.schema]
 		
@@ -217,23 +207,27 @@ def main():
 			pass
 		else:
 			continue
+		
+		#print 'list is',len(binlogevent.rows)
+		
+		if isinstance(binlogevent,WriteRowsEvent):
 			
-		for row in binlogevent.rows:
+			tssql = []
 			
-			if isinstance(binlogevent,WriteRowsEvent):
-			
+			for row in binlogevent.rows:
+				
 				#异构
 				for v in S:
 					row['values'][v] = S[v]
-			
-			
+				
+				
 				#去除多余字段
 				tidblist = column_dict[ti_db][binlogevent.table].values()
 				mylist = row['values'].keys()
 				for m in mylist:
 					if m not in tidblist:
 						del row['values'][m]
-				
+					
 				#判断是否有双引号,解决双引号异常		
 				for va in row['values']:
 					if isinstance(row['values'][va],unicode):
@@ -243,94 +237,110 @@ def main():
 							else:
 								row['values'][va] = row['values'][va].replace("'",r"\'")
 								print row['values'][va]
-				
+					
 				template = 'INSERT INTO `{0}`.`{1}`({2}) VALUES ({3});'.format(
 					bdb,binlogevent.table,
 					', '.join(map(lambda key: '`%s`' % key, row['values'].keys())),
 					', '.join(map(lambda v: "'%s'" % v,row["values"].values()))
 				)
-				
-				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos)
-				
+				tssql.append('%s;'%template)
+			tssqlall = '\n'.join(tssql)
 			
-			elif isinstance(binlogevent, DeleteRowsEvent):
-				print 'This is DELETE OPTIONS'			
-				#异构
-				for v in S:
-					row['values'][v] = S[v]
+			TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos,tssqlall)
 					
-				#判断是否有双引号,解决双引号异常		
-				for va in row['values']:
-					if isinstance(row['values'][va],unicode):
-
-						s = row['values'][va]
-						if s.find('"') >0:
-							if s.find(r'\"') >0:
-								pass
-							else:
-								row['values'][va] = s.replace('"',r'\"')
-								print row['values'][va]
-								
-						if len(re.findall("\'",s)) == 1:
-							row['values'][va] = s.replace("\'","")
-							print row['values'][va]
+			
+			if isinstance(binlogevent, DeleteRowsEvent):
+			
+				tssql = []
+				
+				for row in binlogevent.rows:
+				
+					print 'This is DELETE OPTIONS'			
+					#异构
+					for v in S:
+						row['values'][v] = S[v]
 						
-				
-				
-				#去除多余字段
-				tidblist = column_dict[ti_db][binlogevent.table].values()
-				mylist = row['values'].keys()
-				for m in mylist:
-					if m not in tidblist:
-						del row['values'][m]
-				
-				
-				template = 'DELETE FROM `{0}`.`{1}` WHERE {2} ;'.format(
-					bdb, binlogevent.table, ' AND '.join(map(compare_items, row['values'].items()))
-				)
-				
-				template = template.replace('= NULL','IS NULL')
-				
-				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos)
-				
-			elif isinstance(binlogevent, UpdateRowsEvent):
-				print 'This is UPDATE OPTIONS'
-				#注入添加字段和值
-				for v in S:
-					row['before_values'][v] = S[v]
-					
-				#去除多余字段
-				tidblist = column_dict[ti_db][binlogevent.table].values()
-				mylist = row['before_values'].keys()
-				for m in mylist:
-					if m not in tidblist:
-						del row['before_values'][m]
-						del row['after_values'][m]
-		
-				#判断是否有双引号,解决双引号异常				
-				for v1 in row:
-					for va in row[v1]:
-						if isinstance(row[v1][va],unicode):
-							
-							s = row[v1][va]
+					#判断是否有双引号,解决双引号异常		
+					for va in row['values']:
+						if isinstance(row['values'][va],unicode):
+
+							s = row['values'][va]
 							if s.find('"') >0:
 								if s.find(r'\"') >0:
 									pass
 								else:
-									row[v1][va] = s.replace('"',r'\"')
-									print row[v1][va]
+									row['values'][va] = s.replace('"',r'\"')
+									print row['values'][va]
 									
 							if len(re.findall("\'",s)) == 1:
-								row[v1][va] = s.replace("\'","")
-								print row[v1][va]
-				
-				template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
-					bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
-					' AND '.join(map(compare_items,row["before_values"].items())).replace('= NULL','IS NULL'),datetime.datetime.fromtimestamp(binlogevent.timestamp))
-				template = template.replace('""','"')
-				
-				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos)
+								row['values'][va] = s.replace("\'","")
+								print row['values'][va]
+							
+					
+					
+					#去除多余字段
+					tidblist = column_dict[ti_db][binlogevent.table].values()
+					mylist = row['values'].keys()
+					for m in mylist:
+						if m not in tidblist:
+							del row['values'][m]
+					
+					
+					template = 'DELETE FROM `{0}`.`{1}` WHERE {2} ;'.format(
+						bdb, binlogevent.table, ' AND '.join(map(compare_items, row['values'].items()))
+					)
+					
+					template = template.replace('= NULL','IS NULL')
+					
+					tssql.append('%s;'%template)
+				tssqlall = '\n'.join(tssql)
+				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos,tssqlall)
+					
+			if isinstance(binlogevent, UpdateRowsEvent):
+			
+				tssql = []
+			
+				for row in binlogevent.rows:
+					print 'This is UPDATE OPTIONS'
+					#注入添加字段和值
+					for v in S:
+						row['before_values'][v] = S[v]
+						
+					#去除多余字段
+					tidblist = column_dict[ti_db][binlogevent.table].values()
+					mylist = row['before_values'].keys()
+					for m in mylist:
+						if m not in tidblist:
+							del row['before_values'][m]
+							del row['after_values'][m]
+			
+					#判断是否有双引号,解决双引号异常				
+					for v1 in row:
+						for va in row[v1]:
+							if isinstance(row[v1][va],unicode):
 								
+								s = row[v1][va]
+								if s.find('"') >0:
+									if s.find(r'\"') >0:
+										pass
+									else:
+										row[v1][va] = s.replace('"',r'\"')
+										print row[v1][va]
+										
+								if len(re.findall("\'",s)) == 1:
+									row[v1][va] = s.replace("\'","")
+									#print row[v1][va]
+					
+					template='UPDATE `{0}`.`{1}` set {2} WHERE {3} ;'.format(
+						bdb, binlogevent.table,','.join(map(compare_items,row["after_values"].items())),
+						' AND '.join(map(compare_items,row["before_values"].items())).replace('= NULL','IS NULL'),datetime.datetime.fromtimestamp(binlogevent.timestamp))
+					template = template.replace('""','"')
+				
+					tssql.append('%s;'%template)
+					
+				tssqlall = '\n'.join(tssql)
+				TransFer(binlogevent.schema,bdb,template,stream.log_file,stream.log_pos,tssqlall)
+			
 	stream.close()
 
 if __name__ == "__main__":
